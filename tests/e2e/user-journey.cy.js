@@ -17,7 +17,7 @@ describe('User Journey E2E Tests', () => {
       expect(response.status).to.eq(201)
       expect(response.body).to.have.property('message', 'User created successfully')
       expect(response.body).to.have.property('userId')
-      
+
       // Login with the registered user
       return cy.request({
         method: 'POST',
@@ -32,7 +32,7 @@ describe('User Journey E2E Tests', () => {
       expect(response.body).to.have.property('token')
       expect(response.body).to.have.property('user')
       authToken = response.body.token
-      
+
       // Access protected endpoint
       return cy.request({
         method: 'GET',

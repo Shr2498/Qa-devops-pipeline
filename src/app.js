@@ -23,7 +23,8 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       connectSrc: ["'self'"]
     }
-  }
+  },
+  frameguard: { action: 'deny' }
 }))
 app.use(cors())
 app.use(rateLimiter)
@@ -68,22 +69,24 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use(errorHandler)
 
-// Start server
-const server = app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server running on port ${PORT}`)
-  // eslint-disable-next-line no-console
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
-})
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  // eslint-disable-next-line no-console
-  console.log('SIGTERM received, shutting down gracefully')
-  server.close(() => {
+// Start server only if not in test environment
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
     // eslint-disable-next-line no-console
-    console.log('Process terminated')
+    console.log(`Server running on port ${PORT}`)
+    // eslint-disable-next-line no-console
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
   })
-})
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    // eslint-disable-next-line no-console
+    console.log('SIGTERM received, shutting down gracefully')
+    server.close(() => {
+      // eslint-disable-next-line no-console
+      console.log('Process terminated')
+    })
+  })
+}
 
 module.exports = app

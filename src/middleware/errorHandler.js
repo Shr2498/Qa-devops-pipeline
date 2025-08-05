@@ -27,6 +27,14 @@ const errorHandler = (error, req, res, next) => {
     // MongoDB duplicate key error
     status = 409
     message = 'Duplicate entry detected'
+  } else if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    // JSON parsing error
+    status = 400
+    message = 'Invalid JSON in request body'
+  } else if (error.name === 'PayloadTooLargeError' || error.message === 'request entity too large') {
+    // Payload too large error
+    status = 413
+    message = 'Request payload too large'
   }
 
   // Don't expose internal errors in production

@@ -1,3 +1,58 @@
+const checkValidationErrors = (error) => {
+  if (error.name === 'ValidationError') {
+    return { status: 400, message: 'Validation failed', details: error.details }
+  }
+  if (error.name === 'CastError') {
+    return { status: 400, message: 'Invalid data format', details: null }
+  }
+  return null
+}
+
+const checkAuthErrors = (error) => {
+  if (error.name === 'UnauthorizedError') {
+    return { status: 401, message: 'Unauthorized access', details: null }
+  }
+  return null
+}
+
+const checkDatabaseErrors = (error) => {
+  if (error.code === 11000) {
+    return { status: 409, message: 'Duplicate entry detected', details: null }
+  }
+  return null
+}
+
+const checkRequestErrors = (error) => {
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return { status: 400, message: 'Invalid JSON in request body', details: null }
+  }
+  if (error.name === 'PayloadTooLargeError' || error.message === 'request entity too large') {
+    return { status: 413, message: 'Request payload too large', details: null }
+  }
+  return null
+}
+
+const getErrorDetails = (error) => {
+  const validationError = checkValidationErrors(error)
+  if (validationError) return validationError
+
+  const authError = checkAuthErrors(error)
+  if (authError) return authError
+
+  const dbError = checkDatabaseErrors(error)
+  if (dbError) return dbError
+
+  const requestError = checkRequestErrors(error)
+  if (requestError) return requestError
+
+  // Default case
+  return {
+    status: 500,
+    message: error.message || 'Internal server error',
+    details: null
+  }
+}
+
 const errorHandler = (error, req, res, next) => {
   // eslint-disable-next-line no-console
   console.error('Error occurred:', {
@@ -8,34 +63,7 @@ const errorHandler = (error, req, res, next) => {
     timestamp: new Date().toISOString()
   })
 
-  let status = 500
-  let message = error.message || 'Internal server error'
-  let details = null
-
-  // Handle specific error types
-  if (error.name === 'ValidationError') {
-    status = 400
-    message = 'Validation failed'
-    ;({ details } = error)
-  } else if (error.name === 'UnauthorizedError') {
-    status = 401
-    message = 'Unauthorized access'
-  } else if (error.name === 'CastError') {
-    status = 400
-    message = 'Invalid data format'
-  } else if (error.code === 11000) {
-    // MongoDB duplicate key error
-    status = 409
-    message = 'Duplicate entry detected'
-  } else if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
-    // JSON parsing error
-    status = 400
-    message = 'Invalid JSON in request body'
-  } else if (error.name === 'PayloadTooLargeError' || error.message === 'request entity too large') {
-    // Payload too large error
-    status = 413
-    message = 'Request payload too large'
-  }
+  let { status, message, details } = getErrorDetails(error)
 
   // Don't expose internal errors in production
   if (process.env.NODE_ENV === 'production' && status === 500) {

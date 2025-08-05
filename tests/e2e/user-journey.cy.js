@@ -1,47 +1,49 @@
 describe('User Journey E2E Tests', () => {
   let authToken
+  const timestamp = Date.now()
+  const testUser = {
+    username: `e2etest${timestamp}`,
+    email: `e2etest${timestamp}@example.com`,
+    password: 'Password123'
+  }
 
   it('should complete full user registration and authentication flow', () => {
     // Register a new user
     cy.request({
       method: 'POST',
       url: '/api/auth/register',
-      body: {
-        username: 'e2etest',
-        email: 'e2etest@example.com',
-        password: 'Password123'
-      }
+      body: testUser
     }).then((response) => {
       expect(response.status).to.eq(201)
       expect(response.body).to.have.property('message', 'User created successfully')
       expect(response.body).to.have.property('userId')
-    })
-
-    // Login with the registered user
-    cy.request({
-      method: 'POST',
-      url: '/api/auth/login',
-      body: {
-        email: 'e2etest@example.com',
-        password: 'Password123'
-      }
+      
+      // Login with the registered user
+      return cy.request({
+        method: 'POST',
+        url: '/api/auth/login',
+        body: {
+          email: testUser.email,
+          password: testUser.password
+        }
+      })
     }).then((response) => {
       expect(response.status).to.eq(200)
       expect(response.body).to.have.property('token')
       expect(response.body).to.have.property('user')
       authToken = response.body.token
-    })
-
-    // Access protected endpoint
-    cy.request({
-      method: 'GET',
-      url: '/api/auth/me',
-      headers: {
-        Authorization: `Bearer ${authToken}`
-      }
+      
+      // Access protected endpoint
+      return cy.request({
+        method: 'GET',
+        url: '/api/auth/me',
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      })
     }).then((response) => {
       expect(response.status).to.eq(200)
-      expect(response.body.user).to.have.property('email', 'e2etest@example.com')
+      expect(response.body.user).to.have.property('email', testUser.email)
     })
   })
 

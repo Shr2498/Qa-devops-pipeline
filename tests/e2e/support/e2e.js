@@ -1,8 +1,6 @@
 // Cypress E2E support commands
 
 // Custom command for API authentication
-// Import commands.js using ES2015 syntax:
-import './commands'
 
 Cypress.Commands.add('login', (email, password) => {
   cy.request({

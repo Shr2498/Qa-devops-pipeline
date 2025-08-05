@@ -186,8 +186,15 @@ jobs:
     - name: Start application
       run: |
         docker run -d -p 3000:3000 --name qa-app qa-devops-app:latest
-        sleep 10  # Wait for app to start
+        echo "Waiting for application to start..."
+        timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+        echo "Application is ready for E2E tests"
     
+    - name: Verify application health
+      run: |
+        curl -f http://localhost:3000/health
+        echo "Health check passed - application is responsive"
+
     - name: Run E2E tests
       run: npm run test:e2e
     
@@ -232,7 +239,9 @@ jobs:
     - name: Start application for performance testing
       run: |
         docker run -d -p 3000:3000 --name qa-perf-app qa-devops-app:latest
-        sleep 10  # Wait for app to start
+        echo "Waiting for application to start..."
+        timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+        echo "Application is ready for performance testing"
     
     - name: Install k6
       run: |
